@@ -10,7 +10,7 @@ import shutil
 
 
 #Specify Directories to be used 
-BaseDir="~/Airflow"
+BaseDir="$PWD"
 RawFiles=BaseDir+"/Raw/"
 Staging=BaseDir+"/Staging/"
 StarSchema=BaseDir+"/StarSchema/"
