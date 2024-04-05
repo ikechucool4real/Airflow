@@ -718,7 +718,7 @@ def DimHTTPStatus():
 
 #Create file size Dimension in Schema directory
 def DimfileSize():
-    with open(Staging+'UniqfileSize.txt', 'r') as inFile, \
+    with open(Staging+'UniqFileSize.txt', 'r') as inFile, \
         open(StarSchema+'DimFileSize.txt', 'w') as outputFile:
 
         lines = inFile.readlines()
