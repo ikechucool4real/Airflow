@@ -11,9 +11,9 @@ import shutil
 
 # Specify Directories to be used
 BaseDir = os.getcwd()  # Gets the current working directory
-RawFiles = os.path.join(BaseDir, "Raw")
-Staging = os.path.join(BaseDir, "Staging")
-StarSchema = os.path.join(BaseDir, "StarSchema")
+RawFiles = os.path.join(BaseDir, "Raw/")
+Staging = os.path.join(BaseDir, "Staging/")
+StarSchema = os.path.join(BaseDir, "StarSchema/")
 
 
 #Create Directories
