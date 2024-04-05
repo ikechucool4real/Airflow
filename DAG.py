@@ -16,13 +16,6 @@ Staging = os.path.join(BaseDir, "Staging/")
 StarSchema = os.path.join(BaseDir, "StarSchema/")
 
 
-#Create Directories
-os.makedirs(BaseDir, exist_ok=True)
-os.makedirs(RawFiles, exist_ok=True)
-os.makedirs(Staging, exist_ok=True)
-os.makedirs(StarSchema, exist_ok=True)
-
-
 #Create new files in the staging directory if they dont exist
 def CreateStagingFiles():
     with open(Staging+'Outputshort.txt', 'w'):
