@@ -1,5 +1,5 @@
 sudo curl -LfO 'https://airflow.apache.org/docs/apache-airflow/2.8.4/docker-compose.yaml'
-sudo mkdir -p ./dags ./logs ./plugins ./config ./Staging ./StarSchema
+sudo mkdir -p ./dags ./logs ./plugins ./config 
 sudo cp DAG.py ./dags/
 echo "AIRFLOW_UID=$(id -u)" | sudo tee .env
 #AIRFLOW_UID=50000
