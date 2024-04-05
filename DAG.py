@@ -17,11 +17,10 @@ StarSchema=BaseDir+"/StarSchema/"
 
 
 #Create Directories
-def CreateDir():
-    os.makedirs(BaseDir, exist_ok=True)
-    os.makedirs(RawFiles, exist_ok=True)
-    os.makedirs(Staging, exist_ok=True)
-    os.makedirs(StarSchema, exist_ok=True)
+os.makedirs(BaseDir, exist_ok=True)
+os.makedirs(RawFiles, exist_ok=True)
+os.makedirs(Staging, exist_ok=True)
+os.makedirs(StarSchema, exist_ok=True)
 
 
 #Create new files in the staging directory if they dont exist
@@ -824,12 +823,6 @@ dag = DAG(
    catchup=False,
 )
 
-Create_Dir = PythonOperator(
-    task_id='CreateDir',
-    python_callable=CreateDir,
-    dag=dag,
-)
-
 Extract_Files = PythonOperator(
     task_id='ExtractFiles',
     python_callable=ExtractFiles,
@@ -980,7 +973,7 @@ Fact_Table = PythonOperator(
     dag=dag,
 )
 
-Create_Dir >> Extract_Files >> Fact_File
+Extract_Files >> Fact_File
 Fact_File >> [get_Date, get_Time, get_File_Info, get_IPs, get_File_Info_IPs, get_OS_Browser, get_Referrer, get_HTTP_Status, get_file_size, get_Response_Time, Fact_Table]
 get_Date >> Dim_Date
 get_Time >> Dim_Time
