@@ -184,7 +184,59 @@ def getIPs():
            outputFile.write(uniqueline + '\n')
 
 
-# Create Unique IP in staging directory
+#Create Location in Staging directory
+def getLocation():
+    with open(Staging+'UniqIP.txt', 'r') as inFile, \
+        open(Staging+'DimLocation.txt', 'w') as outputFile:
+
+        lines = inFile.readlines()
+        outputFile.write("{},{},{},{},{},{},{}\n".format("IP","country_code","country_name","city","state","latitude","longitude"))
+
+        for i, line in enumerate(lines[1:]):
+            line = str(line).strip()
+
+            # Skip empty lines
+            if not line:
+                continue
+
+            # URL to send the request to
+            request_url = 'https://geolocation-db.com/jsonp/' + line      
+
+            # Send request and decode the result
+            try:
+                response = requests.get(request_url)
+                if response.status_code == 200:
+                    result = response.content.decode()
+
+                    # Clean the returned string so it just contains the dictionary data for the IP address
+                    result = result.split("(")[1].strip(")")
+                    # Convert this data into a dictionary
+                    result  = json.loads(result)
+
+                    IPv4 = result.get("IPv4", " 0 ")
+                    country_code = result.get("country_code", "N/A")
+                    country_name = result.get("country_name", "N/A")
+                    city = result.get("city", "N/A")
+                    state = result.get("state", "N/A")
+                    latitude = result.get("latitude", " 0 ")
+                    longitude= result.get("longitude", " 0 ")
+
+
+                    out = "{},{},{},{},{},{},{}".format(IPv4,country_code,country_name,city,state,latitude,longitude)
+                    
+                    # Add newline character to all but the last line
+                    if i < len(lines) - 2:
+                        out += "\n"
+
+                    outputFile.write(out)
+                else:
+                    print("Error: Request failed with status code", response.status_code)
+
+            except Exception as e:
+                print ("Error: ", str(e) )     
+
+
+# Create Unique FileInfo and IP in staging directory
 def getFileInfoIPs():
     FileInfoIPSet = set()  # Using a set to store unique lines
     with open(Staging+'OutFact1.txt', 'r') as inFile:
@@ -458,57 +510,6 @@ def DimVisit():
                 print("Error with line:", e)
 
 
-#Create Location Dimension in Schema directory
-def DimLocation():
-    with open(Staging+'UniqIP.txt', 'r') as inFile, \
-        open(Staging+'DimLocation.txt', 'w') as outputFile:
-
-        lines = inFile.readlines()
-        outputFile.write("{},{},{},{},{},{},{}\n".format("IP","country_code","country_name","city","state","latitude","longitude"))
-
-        for i, line in enumerate(lines[1:]):
-            line = str(line).strip()
-
-            # Skip empty lines
-            if not line:
-                continue
-
-            # URL to send the request to
-            request_url = 'https://geolocation-db.com/jsonp/' + line      
-
-            # Send request and decode the result
-            try:
-                response = requests.get(request_url)
-                if response.status_code == 200:
-                    result = response.content.decode()
-
-                    # Clean the returned string so it just contains the dictionary data for the IP address
-                    result = result.split("(")[1].strip(")")
-                    # Convert this data into a dictionary
-                    result  = json.loads(result)
-
-                    IPv4 = result.get("IPv4", " 0 ")
-                    country_code = result.get("country_code", "N/A")
-                    country_name = result.get("country_name", "N/A")
-                    city = result.get("city", "N/A")
-                    state = result.get("state", "N/A")
-                    latitude = result.get("latitude", " 0 ")
-                    longitude= result.get("longitude", " 0 ")
-
-
-                    out = "{},{},{},{},{},{},{}".format(IPv4,country_code,country_name,city,state,latitude,longitude)
-                    
-                    # Add newline character to all but the last line
-                    if i < len(lines) - 2:
-                        out += "\n"
-
-                    outputFile.write(out)
-                else:
-                    print("Error: Request failed with status code", response.status_code)
-
-            except Exception as e:
-                print ("Error: ", str(e) )     
-
 
 #Create GeoLocation Dimension in Schema directory
 def DimGeoLocation():
@@ -716,7 +717,7 @@ def DimHTTPStatus():
                 print("Error:", e)
 
 
-#Create file size Dimension in Schema directory
+#Create file size Dimension in Schema directory 
 def DimfileSize():
     with open(Staging+'UniqFileSize.txt', 'r') as inFile, \
         open(StarSchema+'DimFileSize.txt', 'w') as outputFile:
@@ -859,6 +860,13 @@ get_IPs = PythonOperator(
     dag=dag,
 )
 
+
+get_Location = PythonOperator(
+    task_id='getLocation',
+    python_callable=getLocation,
+    dag=dag,
+)
+
 get_File_Info_IPs = PythonOperator(
     task_id='getFileInfoIPs',
     python_callable=getFileInfoIPs,
@@ -910,12 +918,6 @@ Dim_Time = PythonOperator(
 Dim_File_Info = PythonOperator(
     task_id='DimFileInfo',
     python_callable=DimFileInfo,
-    dag=dag,
-)
-
-Dim_Location = PythonOperator(
-    task_id='DimLocation',
-    python_callable=DimLocation,
     dag=dag,
 )
 
@@ -979,12 +981,10 @@ get_Date >> Dim_Date
 get_Time >> Dim_Time
 get_File_Info >> Dim_File_Info
 get_File_Info_IPs >> Dim_Visit
-get_IPs >> Dim_Location
-Dim_Location >> Dim_Geo_Location
+get_IPs >> get_Location
+get_Location >> Dim_Geo_Location
 get_OS_Browser >> [Dim_OS, Dim_Browser]
 get_Referrer >> Dim_Referrer
 get_HTTP_Status >> Dim_HTTP_Status
 get_file_size >> Dim_file_Size
 get_Response_Time >> Dim_Response_Time
-
-
