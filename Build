@@ -18,7 +18,7 @@ sudo curl -LfO 'https://airflow.apache.org/docs/apache-airflow/2.8.4/docker-comp
 # Create Airflow in Docker container
 sudo mkdir -p ./dags ./logs ./plugins ./config ./Staging ./StarSchema
 sudo cp DAG.py ./dags/
-sudo gsutil cp -r gs://Airflow/Raw/ ./Raw/
+sudo gsutil cp -r gs://ike-airflow/Raw/ ./Raw/
 echo "AIRFLOW_UID=$(id -u)" | sudo tee .env
 #AIRFLOW_UID=50000
 sudo docker compose up airflow-init -d
