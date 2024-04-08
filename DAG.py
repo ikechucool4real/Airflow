@@ -8,7 +8,6 @@ import json
 import re
 import shutil
 
-
 # Specify Directories to be used
 BaseDir = os.getcwd()  # Gets the current working directory
 RawFiles = os.path.join(BaseDir, "Raw/")
@@ -165,6 +164,68 @@ def getFileInfo():
         for uniqueline in FileInfo:
            outputFile.write(uniqueline + '\n')  
 
+
+#Create FileInfo in staging directory
+def getFileInfoDim():
+    with open(Staging+'UniqFileInfo.txt', 'r') as inFile, \
+        open(Staging+'DimFileInfo.txt', 'w') as outputFile:
+
+        lines = inFile.readlines()
+        outputFile.write("File,Name,Type\n")
+
+        for i, line in enumerate(lines[1:]):
+            line=line.strip()   
+
+            try:
+                if not line:  # Skip empty lines
+                    continue
+
+                if len(line)>3 and line[-3] == ".":
+                    name = line[:-3]
+                    type = line[-3:]
+                    out="{},{},{}".format(line,name,type)
+
+                    # Add newline character to all but the last line
+                    if i < len(lines) - 2:
+                        out += "\n"
+                    outputFile.write(out)
+
+                elif len(line)>4 and line[-4] == ".":
+                    name = line[:-4]
+                    type = line[-4:]
+                    out="{},{},{}".format(line,name,type)
+
+                    # Add newline character to all but the last line
+                    if i < len(lines) - 2:
+                        out += "\n"
+                    outputFile.write(out)
+
+                elif len(line)>5 and line[-5] == ".":
+                    name = line[:-5]
+                    type = line[-5:]
+                    out="{},{},{}".format(line,name,type)
+
+                    # Add newline character to all but the last line
+                    if i < len(lines) - 2:
+                        out += "\n"
+                    outputFile.write(out)
+
+                else:
+                    name = line
+                    type = ""
+
+                    if i == len(lines) - 2:
+                        type = "/"
+
+                    out="{},{},{}".format(line,name,type)
+
+                    # Add newline character to all but the last line
+                    if i < len(lines) - 2:
+                        out += "\n"
+                    outputFile.write(out)
+
+            except Exception as e:
+                print("Error with line:", e)
 
 # Create Unique IP in staging directory
 def getIPs():
@@ -402,53 +463,36 @@ def DimTime():
 
 #Create FileInfo Dimension in Schema directory
 def DimFileInfo():
-    with open(Staging+'UniqFileInfo.txt', 'r') as inFile, \
-        open(StarSchema+'DimFileInfo.txt', 'w') as outputFile:
+    with open(Staging+'DimFileInfo.txt', 'r') as inFile, \
+        open(StarSchema+'DimFileName.txt', 'w') as outputFile:
 
         lines = inFile.readlines()
         outputFile.write("File,Name,Type\n")
 
         for i, line in enumerate(lines[1:]):
-            line=line.strip()   
+            line=line.strip() 
+            splitline = line.split(",")
+            file = splitline[0]
+            type = splitline[2]  
 
             try:
                 if not line:  # Skip empty lines
                     continue
 
-                if len(line)>4 and line[-4] == ".":
-                    name = line[:-4]
-                    type = line[-4:]
-                    out="{},{},{}".format(line,name,type)
-
-                    # Add newline character to all but the last line
-                    if i < len(lines) - 2:
-                        out += "\n"
-                    outputFile.write(out)
+                if "/darwin/image" in splitline[1].lower():
+                    name = "/Darwin/Image"
+                elif "/php" in splitline[1].lower():
+                    name = "/phpMyAdmin"
                 else:
-                    if len(line)>5 and line[-5] == ".":
-                        name = line[:-5]
-                        type = line[-5:]
-                        out="{},{},{}".format(line,name,type)
+                    name = splitline[1]
 
-                        # Add newline character to all but the last line
-                        if i < len(lines) - 2:
-                            out += "\n"
-                        outputFile.write(out)
+                out = "{},{},{}".format(file,name,type)
 
-                    else:
-                        name = line
-                        type = ""
-
-                        if i == len(lines) - 2:
-                            type = "/"
-
-                        out="{},{},{}".format(line,name,type)
-
-                        # Add newline character to all but the last line
-                        if i < len(lines) - 2:
-                            out += "\n"
-                        outputFile.write(out)
-
+                # Add newline character to all but the last line
+                if i < len(lines) - 2:
+                    out += "\n"
+                outputFile.write(out)
+                
             except Exception as e:
                 print("Error with line:", e)
                                        
@@ -633,13 +677,14 @@ def DimReferrer():
 
             try:    
                 if not stripedline:  # Skip empty lines
-                    continue
+                    Referrer = "blank"
 
-                if "-" in stripedline and len(stripedline) == 1:
-                    continue
+                elif "-" in stripedline and len(stripedline) == 1:
+                    Referrer = "blank"
 
-                splitline = re.split('[?;%]', stripedline)
-                Referrer = splitline[0].strip() 
+                else:
+                    splitline = re.split('[?;%]', stripedline)
+                    Referrer = splitline[0].strip() 
 
                 out = "{},{}".format(stripedline,Referrer)
 
@@ -854,6 +899,12 @@ get_File_Info = PythonOperator(
     dag=dag,
 )
 
+get_File_Info_Dim = PythonOperator(
+    task_id='getFileInfoDim',
+    python_callable=getFileInfoDim,
+    dag=dag,
+)
+
 get_IPs = PythonOperator(
     task_id='getIPs',
     python_callable=getIPs,
@@ -976,10 +1027,11 @@ Fact_Table = PythonOperator(
 )
 
 Extract_Files >> Fact_File
-Fact_File >> [get_Date, get_Time, get_File_Info, get_IPs, get_File_Info_IPs, get_OS_Browser, get_Referrer, get_HTTP_Status, get_file_size, get_Response_Time, Fact_Table]
+Fact_File >> [get_Date, get_Time, get_File_Info, get_File_Info_Dim, get_IPs, get_File_Info_IPs, get_OS_Browser, get_Referrer, get_HTTP_Status, get_file_size, get_Response_Time, Fact_Table]
 get_Date >> Dim_Date
 get_Time >> Dim_Time
-get_File_Info >> Dim_File_Info
+get_File_Info >> get_File_Info_Dim
+get_File_Info_Dim >> Dim_File_Info
 get_File_Info_IPs >> Dim_Visit
 get_IPs >> get_Location
 get_Location >> Dim_Geo_Location
